@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generate time tracking CSV and HTML report from Claude session data."""
 
+import html as html_mod
 import json
 import os
 import glob
@@ -26,6 +27,21 @@ IDLE_THRESHOLD_MIN = 60
 RESPONSE_BUFFER_MIN = 10
 
 
+def esc(text):
+    """Escape text for safe HTML insertion."""
+    return html_mod.escape(str(text))
+
+
+def _is_safe_path(path):
+    """Check that a file path is within ~/.claude/ to prevent path traversal."""
+    try:
+        claude_dir = os.path.realpath(os.path.expanduser("~/.claude"))
+        real_path = os.path.realpath(path)
+        return real_path.startswith(claude_dir + os.sep) or real_path == claude_dir
+    except (ValueError, TypeError):
+        return False
+
+
 def pill_text_color(bg):
     """Return appropriate text color for a pill background."""
     return "#553600" if bg in LIGHT_COLORS else "#fff"
@@ -38,8 +54,11 @@ def load_sessions():
 
     # 1. Primary source: session-meta JSON files.
     for f in glob.glob(os.path.join(SESSION_META_DIR, "*.json")):
-        with open(f) as fh:
-            s = json.load(fh)
+        try:
+            with open(f) as fh:
+                s = json.load(fh)
+        except (json.JSONDecodeError, IOError):
+            continue
         sessions.append(s)
         meta_ids.add(s.get("session_id", ""))
 
@@ -52,18 +71,21 @@ def load_sessions():
         idx_path = os.path.join(PROJECTS_DIR, d, "sessions-index.json")
         if not os.path.exists(idx_path):
             continue
-        with open(idx_path) as f:
-            data = json.load(f)
+        try:
+            with open(idx_path) as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, IOError):
+            continue
         for entry in data.get("entries", []):
             sid = entry.get("sessionId", "")
             if sid in meta_ids:
                 continue
 
             jsonl_path = entry.get("fullPath", "")
-            if not jsonl_path or not os.path.exists(jsonl_path):
+            if not jsonl_path or not os.path.exists(jsonl_path) or not _is_safe_path(jsonl_path):
                 # Try constructing the path from project dir.
                 jsonl_path = os.path.join(PROJECTS_DIR, d, f"{sid}.jsonl")
-            if not os.path.exists(jsonl_path):
+            if not os.path.exists(jsonl_path) or not _is_safe_path(jsonl_path):
                 continue
 
             # Parse JSONL to extract user message timestamps.
@@ -104,8 +126,11 @@ def load_sessions():
         project_path = ""
         idx_path = os.path.join(pdir, "sessions-index.json")
         if os.path.exists(idx_path):
-            with open(idx_path) as f:
-                idx_data = json.load(f)
+            try:
+                with open(idx_path) as f:
+                    idx_data = json.load(f)
+            except (json.JSONDecodeError, IOError):
+                idx_data = {}
             for e in idx_data.get("entries", []):
                 pp = e.get("projectPath", "")
                 if pp:
@@ -353,9 +378,9 @@ def generate_html(rows, color_map, summary, cal_data, deduped_daily):
                             txt = pill_text_color(color)
                             pills += (
                                 f'<span class="pill" style="background:{color};color:{txt}">'
-                                f'{e["project"][:4]} {e["hours"]:.1f}h</span>'
+                                f'{esc(e["project"][:4])} {e["hours"]:.1f}h</span>'
                             )
-                            tooltip_lines.append(f'{e["project"]}: {e["hours"]:.1f}h')
+                            tooltip_lines.append(f'{esc(e["project"])}: {e["hours"]:.1f}h')
                         tooltip = "&#10;".join(tooltip_lines)
                         cal_html += (
                             f'<td class="has-data{today_cls}" data-tooltip="{tooltip}">'
@@ -382,7 +407,7 @@ def generate_html(rows, color_map, summary, cal_data, deduped_daily):
         grand_hours += s["hours"]
         grand_sessions += s["sessions"]
         summary_html += (
-            f'<tr><td><span class="color-dot" style="background:{color}"></span>{p}</td>'
+            f'<tr><td><span class="color-dot" style="background:{color}"></span>{esc(p)}</td>'
             f'<td>{s["hours"]:.1f}h</td><td>{s["sessions"]}</td>'
             f'<td>{s["min_date"]} &rarr; {s["max_date"]}</td></tr>'
         )
@@ -444,7 +469,7 @@ def generate_html(rows, color_map, summary, cal_data, deduped_daily):
 
         for proj in week_projects:
             color = color_map.get(proj, "#999")
-            week_html += f'<tr><td><span class="color-dot" style="background:{color}"></span>{proj}</td>'
+            week_html += f'<tr><td><span class="color-dot" style="background:{color}"></span>{esc(proj)}</td>'
             row_total = 0.0
             for i, dt in enumerate(dates_in_week):
                 hrs = week_lookup[wk_key].get((proj, dt), 0)
@@ -516,7 +541,7 @@ def generate_html(rows, color_map, summary, cal_data, deduped_daily):
         details_html += (
             f'<details class="project-detail">'
             f'<summary><span class="color-dot" style="background:{color}"></span> '
-            f'{p} — {total_h:.1f}h across {total_s} sessions</summary>'
+            f'{esc(p)} — {total_h:.1f}h across {total_s} sessions</summary>'
             f'<table class="detail-table">'
             f'<thead><tr><th>Date</th><th>Hours</th><th>Minutes</th><th>Sessions</th></tr></thead>'
             f'<tbody>'
