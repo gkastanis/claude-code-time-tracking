@@ -111,7 +111,19 @@ Replace `xdg-open` with `open` on macOS, or your preferred browser command.
 
 - Python 3.7+
 - No external dependencies (uses only stdlib)
-- Claude Code session data in `~/.claude/`
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) session data in `~/.claude/`
+
+### Supported Platforms
+
+The script works on any OS where Claude Code runs:
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| **Linux** | Supported | Native Claude Code support |
+| **macOS** | Supported | Native Claude Code support |
+| **Windows (WSL)** | Supported | Claude Code runs inside WSL; `~/.claude/` resolves to the WSL home directory |
+
+The generated HTML report opens in any modern browser.
 
 ## License
 
