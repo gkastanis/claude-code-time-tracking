@@ -6,14 +6,27 @@ See how much time you spend coding with Claude Code, broken down by project and 
 
 ## Screenshots
 
-The report includes:
-- **Active Hours** - Deduplicated weekly view of actual time using Claude Code per day
-- **Week View** - Per-project weekly breakdown (Mon-Sun grid)
-- **Month Calendar** - Monthly grid with colored project pills per day
-- **Summary** - Total hours and sessions per project
-- **Detailed Breakdown** - Collapsible per-project day-by-day tables
+### Active Hours
+Deduplicated weekly view - actual wall-clock time using Claude Code per day (overlapping project sessions merged).
 
-All paged views support keyboard navigation (left/right arrow keys).
+![Active Hours](screenshots/active-hours.png)
+
+### Week View
+Per-project weekly breakdown with day-by-day hours in a Mon-Sun grid.
+
+![Week View](screenshots/week-view.png)
+
+### Month Calendar
+Monthly grid with colored project pills showing time per day at a glance.
+
+![Month Calendar](screenshots/month-calendar.png)
+
+### Summary
+Total hours and sessions per project across all time.
+
+![Summary](screenshots/summary.png)
+
+All paged views support keyboard navigation (left/right arrow keys). The report also includes a collapsible **Detailed Breakdown** with per-project day-by-day tables.
 
 ## Quick Start
 
